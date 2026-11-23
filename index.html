@@ -1,1 +1,279 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HSC Board Study Planner</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: Arial, sans-serif;
+  background: #f3f5fb; color: #20243a;
+}
+header {
+  background: #242b55; color: white;
+  padding: 28px 18px; text-align: center;
+}
+header h1 { margin: 0 0 8px; }
+header p { margin: 0; color: #dce1ff; }
+main { max-width: 850px; margin: 22px auto; padding: 0 14px; }
+.card {
+  background: white; border-radius: 14px;
+  padding: 20px; margin-bottom: 16px;
+  box-shadow: 0 3px 14px #18204a12;
+}
+select, button {
+  padding: 11px 14px; border-radius: 9px;
+  border: 1px solid #d5d9e8; font-size: 15px;
+}
+button {
+  background: #343d7b; color: white;
+  border: 0; cursor: pointer;
+}
+button:disabled { opacity: .4; cursor: not-allowed; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.progress {
+  height: 12px; background: #e8eaf3;
+  border-radius: 20px; overflow: hidden;
+}
+#bar { height: 100%; width: 0%; background: #4caa80; }
+.task {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 13px 0; border-bottom: 1px solid #eee;
+}
+.task input { width: 19px; height: 19px; }
+.task label { line-height: 1.5; }
+.small { color: #6c7186; font-size: 14px; }
+.subject { font-weight: bold; color: #4854a0; }
+#topic { font-size: 23px; margin: 10px 0; }
+footer { text-align: center; color: #777; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 HSC Board Planner</h1>
+  <p>Your daily 2-hour Maharashtra HSC study plan</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Your progress</h2>
+    <p id="progressText">0 of 265 tasks completed</p>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="small">Your progress is saved in this browser.</p>
+  </div>
+
+  <div class="card">
+    <h3>Choose your study day</h3>
+    <div class="controls">
+      <button id="prev">← Previous</button>
+      <select id="daySelect"></select>
+      <button id="next">Next →</button>
+    </div>
+    <p class="small" id="date"></p>
+    <p class="subject" id="subject"></p>
+    <h2 id="topic"></h2>
+    <p id="target"></p>
+  </div>
+
+  <div class="card">
+    <h2>⏰ Your 2-hour timetable</h2>
+    <p class="small">Tick each task when you finish it.</p>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="card">
+    <h3>Daily board practice target</h3>
+    <p id="pyq"></p>
+    <p class="small">Focus on textbook language, important definitions,
+      derivations, diagrams and written answers.</p>
+  </div>
+</main>
+
+<footer>Made for your HSC preparation ❤️</footer>
+
+<script>
+const chapters = {
+ Physics: [
+ "Rotational Dynamics","Mechanical Properties of Fluids",
+ "Kinetic Theory of Gases and Radiation","Thermodynamics",
+ "Oscillations","Superposition of Waves","Wave Optics",
+ "Electrostatics","Current Electricity",
+ "Magnetic Fields due to Electric Current","Magnetic Materials",
+ "Electromagnetic Induction","AC Circuits",
+ "Dual Nature of Radiation and Matter",
+ "Structure of Atoms and Nuclei","Semiconductor Devices"
+ ],
+ Chemistry: [
+ "Solid State","Solutions","Ionic Equilibria",
+ "Chemical Thermodynamics","Electrochemistry","Chemical Kinetics",
+ "Elements of Groups 16, 17 and 18",
+ "Transition and Inner Transition Elements",
+ "Coordination Compounds","Halogen Derivatives",
+ "Alcohols, Phenols and Ethers",
+ "Aldehydes, Ketones and Carboxylic Acids",
+ "Amines","Biomolecules","Introduction to Polymer Chemistry",
+ "Green Chemistry and Nanochemistry"
+ ],
+ Maths: [
+ "Mathematical Logic","Matrices","Trigonometric Functions",
+ "Pair of Straight Lines","Vectors","Line and Plane",
+ "Linear Programming","Differentiation",
+ "Applications of Derivatives","Indefinite Integration",
+ "Definite Integration","Application of Definite Integration",
+ "Differential Equations","Probability Distributions",
+ "Binomial Distribution"
+ ]
+};
+
+const tasks = [
+ ["45 min","Read Balbharati textbook and understand the concepts."],
+ ["35 min","Write important answers, definitions, derivations or proofs."],
+ ["25 min","Solve textbook exercises and 3–5 board PYQs."],
+ ["10 min","Close the book and recall what you studied."],
+ ["5 min","Write down mistakes and doubts."]
+];
+
+const queue = [];
+const subjects = Object.keys(chapters);
+let indexes = {Physics:0, Chemistry:0, Maths:0};
+let turn = 0;
+
+while (queue.length < 47) {
+  const subject = subjects[turn % 3];
+  if (indexes[subject] < chapters[subject].length) {
+    queue.push({
+      subject,
+      topic: chapters[subject][indexes[subject]++]
+    });
+  }
+  turn++;
+}
+
+const schedule = [];
+let chapterIndex = 0;
+
+for (let day = 1; day <= 53; day++) {
+  if (day % 8 === 0) {
+    schedule.push({
+      subject: "Revision",
+      topic: "Weekly revision and self-test",
+      target: "Revise completed chapters and solve a short timed test."
+    });
+  } else {
+    const item = queue[chapterIndex++];
+    schedule.push({
+      ...item,
+      target: "Study the main concepts, textbook examples and important board questions."
+    });
+  }
+}
+
+let current = 0;
+const select = document.getElementById("daySelect");
+
+schedule.forEach((item, i) => {
+  const option = document.createElement("option");
+  option.value = i;
+  option.textContent = "Day " + (i+1) + " – " + item.subject;
+  select.appendChild(option);
+});
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem("hscPlanner") || "{}"); }
+  catch(e) { return {}; }
+}
+
+let saved = getSaved();
+
+function save() {
+  localStorage.setItem("hscPlanner", JSON.stringify(saved));
+}
+
+function render() {
+  const item = schedule[current];
+  document.getElementById("daySelect").value = current;
+  document.getElementById("subject").textContent = item.subject;
+  document.getElementById("topic").textContent = item.topic;
+  document.getElementById("target").textContent = item.target;
+
+  const date = new Date(2026, 10, 23);
+  date.setDate(date.getDate() + current);
+  document.getElementById("date").textContent =
+    "Day " + (current+1) + " • " +
+    date.toLocaleDateString("en-IN", {
+      day:"numeric", month:"long", year:"numeric"
+    });
+
+  document.getElementById("pyq").textContent =
+    item.subject === "Revision"
+    ? "Attempt 10–15 mixed questions from previously studied chapters."
+    : "Target: 3–5 previous-year questions from this chapter.";
+
+  const container = document.getElementById("tasks");
+  container.innerHTML = "";
+
+  const dayTasks = item.subject === "Revision"
+    ? [
+      ["30 min","Revise your notes and textbook highlights."],
+      ["30 min","Practise important definitions and formulas."],
+      ["40 min","Solve 10–15 mixed board questions."],
+      ["15 min","Check answers and correct mistakes."],
+      ["5 min","Note topics that need more revision."]
+    ]
+    : tasks;
+
+  dayTasks.forEach((task, i) => {
+    const key = current + "-" + i;
+    const div = document.createElement("div");
+    div.className = "task";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = !!saved[key];
+
+    const label = document.createElement("label");
+    label.textContent = task[0] + " – " + task[1];
+
+    checkbox.addEventListener("change", () => {
+      saved[key] = checkbox.checked;
+      save();
+      updateProgress();
+    });
+
+    div.append(checkbox, label);
+    container.appendChild(div);
+  });
+
+  document.getElementById("prev").disabled = current === 0;
+  document.getElementById("next").disabled = current === 52;
+  updateProgress();
+}
+
+function updateProgress() {
+  const completed = Object.values(saved).filter(Boolean).length;
+  const total = 53 * 5;
+  document.getElementById("progressText").textContent =
+    completed + " of " + total + " tasks completed";
+  document.getElementById("bar").style.width =
+    (completed / total * 100) + "%";
+}
+
+document.getElementById("prev").onclick = () => {
+  if (current > 0) { current--; render(); }
+};
+document.getElementById("next").onclick = () => {
+  if (current < 52) { current++; render(); }
+};
+select.onchange = () => {
+  current = Number(select.value);
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
+
